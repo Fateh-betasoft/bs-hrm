@@ -39,6 +39,29 @@ class UserRegistrationInvite extends Notification implements ShouldQueue
     public function toMail(object $notifiable): MailMessage
     {
         try {
+            // Get the email address from the notifiable object
+            $email = $notifiable->routes['mail'] ?? null;
+            
+            // Log the attempt for debugging
+            Log::info('Attempting to send registration invite email', [
+                'email' => $email,
+                'name' => $this->name,
+                'token' => $this->token
+            ]);
+            
+            // Use direct Mail facade as fallback if needed
+            if (config('app.debug')) {
+                \Illuminate\Support\Facades\Mail::send('emails.user-registration-invite', [
+                    'name' => $this->name,
+                    'url' => url("/user-details/{$this->token}")
+                ], function ($message) use ($email) {
+                    $message->to($email)
+                            ->subject('Complete Your Registration');
+                });
+                
+                Log::info('Direct mail sent successfully', ['email' => $email]);
+            }
+            
             return (new MailMessage)
                 ->view('emails.user-registration-invite', [
                     'name' => $this->name,
@@ -47,7 +70,7 @@ class UserRegistrationInvite extends Notification implements ShouldQueue
         } catch (\Exception $e) {
             Log::error('Failed to send registration invite email', [
                 'error' => $e->getMessage(),
-                'email' => $notifiable->routes['mail'],
+                'email' => $notifiable->routes['mail'] ?? 'unknown',
                 'name' => $this->name
             ]);
             throw $e;
