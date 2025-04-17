@@ -14,5 +14,7 @@ class UserMeta extends Model
         'emp_code',
         'position',
         'father_name',
+        'email_slug',
+        'token',
     ];
 }

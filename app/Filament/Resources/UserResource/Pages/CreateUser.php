@@ -3,30 +3,27 @@
 namespace App\Filament\Resources\UserResource\Pages;
 
 use App\Filament\Resources\UserResource;
+use App\Models\UserRegistrationToken;
+use App\Notifications\UserRegistrationInvite;
 use Filament\Actions;
 use Filament\Resources\Pages\CreateRecord;
-use Illuminate\Support\Facades\Hash;
-use Carbon\Carbon;
+use Illuminate\Support\Facades\Notification;
 
 class CreateUser extends CreateRecord
 {
     protected static string $resource = UserResource::class;
 
-    protected function mutateFormDataBeforeCreate(array $data): array
+    protected function beforeCreate(): void
     {
-        // Extract first name (assuming first word is the first name)
-        $firstName = explode(' ', $data['name'])[0];
+        $registrationToken = UserRegistrationToken::createToken(
+            email: $this->data['email'],
+            name: $this->data['name']
+        );
 
-        // Generate email
-        $data['email'] = strtolower($firstName) . '.betasoft@outlook.com';
+        Notification::route('mail', $this->data['email'])
+            ->notify(new UserRegistrationInvite($registrationToken->token, $this->data['name']));
 
-        // Generate password
-        $password = $firstName . '@' . $data['position'] . '#' . Carbon::now()->year;
-        $data['password'] = Hash::make($password);
-
-        // Remove position from data as it's not a DB column
-        unset($data['position']);
-
-        return $data;
+        $this->halt();
+        $this->notify('success', 'Registration invitation has been sent to the email address.');
     }
 }

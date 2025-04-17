@@ -24,15 +24,15 @@ class UserResource extends Resource
         return $form
             ->schema([
                 Forms\Components\TextInput::make('name')
-                    ->required(),
-                Forms\Components\Select::make('position')
-                    ->options([
-                        'backend' => 'Backend Developer',
-                        'frontend' => 'Frontend Developer',
-                        'fullstack' => 'Fullstack Developer',
-                    ])
-                    ->required(),
+                    ->required()
+                    ->maxLength(255),
+                Forms\Components\TextInput::make('email')
+                    ->email()
+                    ->required()
+                    ->maxLength(255)
+                    ->unique(User::class, 'email', ignoreRecord: true),
             ]);
+
     }
 
     public static function table(Table $table): Table
